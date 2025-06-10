@@ -1,0 +1,19 @@
+# 대용량 모델, 로그, 체크포인트 등
+*.pt
+*.pth
+*.h5
+*.ckpt
+*.npy
+*.npz
+
+# MLflow 로그
+mlruns/
+
+# 캐시 및 임시 파일
+__pycache__/
+*.log
+*.tmp
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
