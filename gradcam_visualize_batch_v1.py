@@ -40,7 +40,7 @@ def preprocess_image(img_path):
 
 def process_folder():
     img_dir = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/test_images"
-    weights = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/20250605_new/swinT_pretrained_fx_focal_best_0610.pt"
+    weights = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/20250605_new/swinT_pretrained_fx_sampler_focal_best.pt"
     output_dir = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/cam_outputs"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -63,7 +63,7 @@ def process_folder():
             _, heatmap, cam_result = heatmap_filter(grayscale_cam, original_image)
             base = os.path.splitext(os.path.basename(img_path))[0]
 
-            # cv2.imwrite(os.path.join(output_dir, f"{base}_input.jpg"), original_image)
+            cv2.imwrite(os.path.join(output_dir, f"{base}_input.jpg"), original_image)
             # cv2.imwrite(os.path.join(output_dir, f"{base}_heatmap.jpg"), heatmap)
             cv2.imwrite(os.path.join(output_dir, f"{base}_cam.jpg"), cam_result)
             print(f"✅ Saved: {base}_cam.jpg")

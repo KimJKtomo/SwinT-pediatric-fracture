@@ -159,10 +159,11 @@ def get_combined_dataset_v2(image_only=True, fracture_only=True):
     # 병합
     combined_df = pd.concat([
         kaggle_df[['image_path', 'label', 'part', 'age_group', 'fracture_visible',
-                   'ao_classification', 'ao_subtypes', 'ao_primary', 'gender', 'source', 'split']],
+                   'ao_classification', 'ao_subtypes', 'ao_primary', 'gender', 'source',
+                   'split', 'diagnosis_uncertain' ]],  # ✅ 여기에 diagnosis_uncertain 추가
         hospital_df,
         load_mura()
-    ], ignore_index=True)
+    ], ignore_index = True)
 
     if image_only:
         combined_df = combined_df[combined_df['image_path'].notnull()]
