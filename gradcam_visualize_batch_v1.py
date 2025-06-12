@@ -40,7 +40,7 @@ def preprocess_image(img_path):
 
 def process_folder():
     img_dir = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/test_images"
-    weights = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/20250605_new/swinT_pretrained_fx_sampler_focal_best.pt"
+    weights = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/20250605_new/swinT_pretrained_fx_masked_focal_best.pt"
     output_dir = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/cam_outputs"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
