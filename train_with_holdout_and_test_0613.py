@@ -6,10 +6,7 @@ import numpy as np
 import cv2
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    confusion_matrix, classification_report,
-    accuracy_score, f1_score
-)
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, f1_score
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import transforms
 import mlflow
@@ -22,7 +19,6 @@ from unified_dataset_0605 import UnifiedFractureDataset
 from pytorch_grad_cam import HiResCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from cam import reshape_transform, heatmap_filter
-
 
 # =========================
 # Configuration
@@ -41,7 +37,6 @@ class Args:
 
 args = Args()
 
-
 # =========================
 # Focal Loss
 # =========================
@@ -57,38 +52,21 @@ class FocalLoss(nn.Module):
         focal_loss = self.alpha * (1 - pt) ** self.gamma * bce_loss
         return focal_loss.mean()
 
-
 # =========================
 # Side Marker Masking
 # =========================
 def mask_side_markers(image):
-    """
-    X-ray 영상 좌우의 R/L 마커 제거를 위해 양쪽 15% 영역을 마스킹 (검게 처리).
-    마커에 의한 모델의 overfitting 및 좌우 정보 의존 방지 목적.
-
-    Args:
-        image (torch.Tensor): [C, H, W] 형태의 RGB 또는 grayscale 이미지 tensor
-
-    Returns:
-        torch.Tensor: 좌우 마스킹이 적용된 이미지
-    """
     if isinstance(image, torch.Tensor):
         _, h, w = image.shape
-        image[:, :, :int(w * 0.15)] = 0            # 왼쪽 15% 제거
-        image[:, :, int(w * 0.85):] = 0            # 오른쪽 15% 제거
+        image[:, :, :int(w * 0.15)] = 0
+        image[:, :, int(w * 0.85):] = 0
     return image
 
-
 class MaskedFractureDataset(UnifiedFractureDataset):
-    """
-    UnifiedFractureDataset을 상속한 마스킹 전용 데이터셋 클래스.
-    X-ray 이미지 로딩 시, 좌우 R/L 마커를 제거하는 mask_side_markers()를 자동 적용.
-    """
     def __getitem__(self, idx):
         image, label = super().__getitem__(idx)
-        image = mask_side_markers(image)  # 마스킹 적용
+        image = mask_side_markers(image)
         return image, label
-
 
 # =========================
 # Test Set Holdout
@@ -108,12 +86,11 @@ def extract_holdout_test_set(df):
     trainval_df = df[~df['image_path'].isin(test_df['image_path'])].reset_index(drop=True)
     return trainval_df, test_df
 
-
 # =========================
 # Training
 # =========================
 def train(trainval_df):
-    mlflow.start_run(run_name="train_with_holdout")
+    mlflow.start_run(run_name="train_with_holdout_verbose")
     mlflow.log_params(vars(args))
 
     train_df = trainval_df[trainval_df['split'] == 'train'].reset_index(drop=True)
@@ -161,9 +138,18 @@ def train(trainval_df):
             all_targets += y.cpu().numpy().flatten().tolist()
 
         scheduler.step()
-        train_f1 = f1_score(all_targets, [int(p > 0.5) for p in all_preds])
+        train_bin = [int(p > 0.5) for p in all_preds]
+        train_f1 = f1_score(all_targets, train_bin)
+        train_acc = accuracy_score(all_targets, train_bin)
+        train_cm = confusion_matrix(all_targets, train_bin)
+
+        print(f"\n[Epoch {epoch}] Train Loss: {total_loss / len(train_loader):.4f}")
+        print(f"[Epoch {epoch}] Train Accuracy: {train_acc:.4f} | F1-score: {train_f1:.4f}")
+        print(f"[Epoch {epoch}] Train Confusion Matrix:\n{train_cm}")
+
         mlflow.log_metric("train_loss", total_loss / len(train_loader), step=epoch)
         mlflow.log_metric("train_f1", train_f1, step=epoch)
+        mlflow.log_metric("train_acc", train_acc, step=epoch)
 
         # Validation
         model.eval()
@@ -178,7 +164,14 @@ def train(trainval_df):
         for t in args.threshold_sweep:
             val_bin = [int(p > t) for p in val_preds]
             val_f1 = f1_score(val_trues, val_bin)
+            val_acc = accuracy_score(val_trues, val_bin)
+            val_cm = confusion_matrix(val_trues, val_bin)
+
+            print(f"[Epoch {epoch}] Val @ threshold {t:.2f} → Acc: {val_acc:.4f}, F1: {val_f1:.4f}")
+            print(f"[Epoch {epoch}] Val Confusion Matrix:\n{val_cm}")
+
             mlflow.log_metric(f"val_f1_t{str(t).replace('.', '_')}", val_f1, step=epoch)
+            mlflow.log_metric(f"val_acc_t{str(t).replace('.', '_')}", val_acc, step=epoch)
 
             if val_f1 > best_f1:
                 best_f1 = val_f1
@@ -194,7 +187,6 @@ def train(trainval_df):
             break
 
     mlflow.end_run()
-
 
 # =========================
 # Final Test + Grad-CAM
@@ -256,7 +248,6 @@ def final_test_and_gradcam(test_df):
 
     for fname in os.listdir("cam_results"):
         mlflow.log_artifact(os.path.join("cam_results", fname), artifact_path="gradcam")
-
 
 # =========================
 # Main
