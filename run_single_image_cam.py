@@ -11,7 +11,7 @@ from pytorch_grad_cam import HiResCAM
 
 # === 설정 ===
 image_path = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/MCF20000.jpg"  # 예: "/mnt/data/sample_fracture.png"
-model_path = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/20250605_new/swinT_pretrained_fx_masked_focal_best.pt"
+model_path = "/mnt/data/KimJG/SwinT/mediaiOA_swinT_cls-main_original/20250605_new/swinT_best_holdout.pt"
 threshold = 0.4
 output_cam_path = "MCF20000_cam_output.jpg"
 
